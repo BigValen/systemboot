@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -210,6 +211,17 @@ func boot(ifname string, dhcp dhcpFunc) error {
 	}
 	debug("DHCP: saved boot file to %s", filename)
 	if !*dryRun {
+		if strings.HasSuffix(filename, ".iso") {
+			// mount the ISO and look for grub config
+			if err := os.MkdirAll("/mnt/iso", 0600); err != nil {
+				return fmt.Errorf("DHCP: cannot create /mnt/iso: %v", err)
+			}
+			cmd := exec.Command("mount", "-t", "iso9660", filename, "/mnt/iso")
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("DHCP: cannot mount ISO on /mnt/iso: %v", err)
+			}
+			cmd = exec.Command("localboot", "-d", "/mnt/iso")
+		}
 		log.Printf("DHCP: kexec'ing into %s", filename)
 		kernel, err := os.OpenFile(filename, os.O_RDONLY, 0)
 		if err != nil {

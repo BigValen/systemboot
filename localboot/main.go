@@ -20,6 +20,7 @@ var (
 	flagDryRun         = flag.Bool("dryrun", false, "Do not actually kexec into the boot config")
 	flagDebug          = flag.Bool("d", false, "Print debug output")
 	flagGrubMode       = flag.Bool("grub", false, "Use GRUB mode, i.e. look for valid Grub/Grub2 configuration in default locations to boot a kernel. GRUB mode ignores -kernel/-initramfs/-cmdline")
+	grubCfg = flag.String("grub-cfg", "", "Full path to a grub.cfg")
 	flagKernelPath     = flag.String("kernel", "", "Specify the path of the kernel to execute. If using -grub, this argument is ignored")
 	flagInitramfsPath  = flag.String("initramfs", "", "Specify the path of the initramfs to load. If using -grub, this argument is ignored")
 	flagKernelCmdline  = flag.String("cmdline", "", "Specify the kernel command line. If using -grub, this argument is ignored")
@@ -222,6 +223,12 @@ func main() {
 	// TODO boot from EFI system partitions. See storage.FilterEFISystemPartitions
 
 	if *flagGrubMode {
+		if *grubCfg != "" {
+			cfg := ScanGrubConfigs(*grubCfg)
+			if err := cfg[0].Boot(); err != nil {
+				log.Fatal(err)
+			}
+		}
 		if err := BootGrubMode(devices, *flagBaseMountPoint, *flagDeviceGUID, *flagDryRun); err != nil {
 			log.Fatal(err)
 		}
